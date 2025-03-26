@@ -1,6 +1,6 @@
 
 
-module "bucket_test" {
+module "buckets" {
   source = "./modules/s3"
   TagEnv     = var.TagEnv
   TagProject = var.TagProject
