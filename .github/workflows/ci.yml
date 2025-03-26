@@ -12,6 +12,25 @@ permissions:
   contents: read
 
 jobs:
+  check-infra-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      infra_changed: ${{ steps.check-changes.outputs.infra_changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for infrastructure changes
+        id: check-changes
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^infra/'; then
+            echo "infra_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "infra_changed=false" >> $GITHUB_OUTPUT
+          fi
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -54,8 +73,8 @@ jobs:
     uses: ./.github/workflows/check-pr.yml
 
   infracost:
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
-    needs: security
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
+    needs: [test, security, check-infra-changes]
     uses: ./.github/workflows/infracost-workflow.yml
     with:
       environment: "dev"
@@ -63,9 +82,9 @@ jobs:
       INFRACOST_TOKEN: ${{ secrets.INFRACOST_TOKEN }}
 
   terraform-dev:
-    if: github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
     uses: ./.github/workflows/terraform-core.yml
-    needs: [test, security, check-pr]
+    needs: [test, security, check-pr, check-infra-changes]
     with:
       environment: "dev"
     secrets:
@@ -73,11 +92,11 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
 
   pr-comment:
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
     needs: [
       terraform-dev,
       check-pr,
-#      infracost
+      #      infracost
     ]
     uses: ./.github/workflows/pr-comment.yml
     with:

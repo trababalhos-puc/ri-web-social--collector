@@ -20,6 +20,25 @@ permissions:
   contents: read
 
 jobs:
+  check-infra-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      infra_changed: ${{ steps.check-changes.outputs.infra_changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for infrastructure changes
+        id: check-changes
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^infra/'; then
+            echo "infra_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "infra_changed=false" >> $GITHUB_OUTPUT
+          fi
+
   determine-environment:
     runs-on: ubuntu-latest
     outputs:
@@ -80,8 +99,8 @@ jobs:
     uses: ./.github/workflows/check-pr.yml
 
   terraform-deploy:
-    if: github.actor != 'dependabot[bot]'
-    needs: [determine-environment, test, security, check-pr]
+    if: github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
+    needs: [determine-environment, test, security, check-pr, check-infra-changes]
     uses: ./.github/workflows/terraform-core.yml
     with:
       environment: ${{ needs.determine-environment.outputs.environment }}
