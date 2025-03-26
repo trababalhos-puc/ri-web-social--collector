@@ -1,0 +1,50 @@
+flowchart TD
+    classDef mainNode fill:#5c7cfa,stroke:#333,stroke-width:4px,color:#fff;
+    classDef decisionNode fill:#845ef7,stroke:#333,stroke-width:2px,color:#fff;
+    classDef jobNode fill:#12b886,stroke:#333,color:#fff;
+    classDef deployNode fill:#40c057,stroke:#333,color:#fff;
+    classDef prepNode fill:#fab005,stroke:#333,color:#000;
+
+    linkStyle default stroke:#666,stroke-width:2px
+
+    A([Push]) --> B{Selecionar Ambiente}
+    class A mainNode;
+    class B decisionNode;
+
+    B -->|Main| PROD[Ambiente Produção]
+    B -->|Staging| STG[Ambiente Staging]
+    B -->|Outras| DEV[Ambiente Desenvolvimento]
+    class PROD,STG,DEV deployNode;
+
+    PROD --> C[Preparação]
+    STG --> C
+    DEV --> C
+    class C jobNode;
+
+    C --> D[Setup Python]
+    C --> E[Instalar Deps]
+    C --> F[Configurar Ambiente]
+    class D,E,F prepNode;
+
+    C --> G[Lint & Testes]
+    class G jobNode;
+
+    G --> H[Segurança]
+    class H jobNode;
+
+    H --> I[Trivy Scan]
+    H --> J[Safety Check]
+    class I,J jobNode;
+
+    G --> K[Verificar PR]
+    I --> L[Terraform Deploy]
+    J --> L
+    K --> L
+    class K,L jobNode;
+
+    L --> N[Infracost]
+    N --> O[Comentário PR]
+    class N,O jobNode;
+
+    O --> P[Concluir Deploy]
+    class P deployNode;

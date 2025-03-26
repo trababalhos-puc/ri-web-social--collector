@@ -1,0 +1,49 @@
+name: "Infracost Analysis"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+    secrets:
+      INFRACOST_TOKEN:
+        required: true
+    outputs:
+      cost_summary_file:
+        description: "Path to the cost summary file"
+        value: ${{ jobs.cost-estimation.outputs.cost_summary_file }}
+      cost_status:
+        description: "Status of the cost estimation"
+        value: ${{ jobs.cost-estimation.outputs.cost_status }}
+
+jobs:
+  cost-estimation:
+    runs-on: ubuntu-latest
+    outputs:
+      cost_summary_file: ${{ steps.save_output.outputs.cost_summary_file }}
+      cost_status: ${{ steps.run_infracost.outcome }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+
+      - name: Run Infracost
+        id: run_infracost
+        run: |
+          chmod +x ./.github/deploy/run_infracost.sh
+          ./.github/deploy/run_infracost.sh "${{ secrets.INFRACOST_TOKEN }}" "${{ inputs.environment }}"
+
+      - name: Save Output File Path as a GitHub Actions Output
+        id: save_output
+        run: |
+          echo "cost_summary_file=infracost_output.txt" >> $GITHUB_ENV
+          echo "cost_summary_file=infracost_output.txt" >> $GITHUB_OUTPUT
+
+      - name: Upload Infracost Output as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: infracost-output-${{ inputs.environment }}
+          path: infracost_output.txt

@@ -1,0 +1,159 @@
+name: "Terraform Core Workflow"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+    secrets:
+      AWS_ACCOUNT:
+        required: true
+      AWS_REGION:
+        required: true
+
+    outputs:
+      fmt_outcome:
+        description: "Outcome of terraform fmt"
+        value: ${{ jobs.terraform.outputs.fmt_outcome }}
+      init_outcome:
+        description: "Outcome of terraform init"
+        value: ${{ jobs.terraform.outputs.init_outcome }}
+      validate_outcome:
+        description: "Outcome of terraform validate"
+        value: ${{ jobs.terraform.outputs.validate_outcome }}
+      plan_outcome:
+        description: "Outcome of terraform plan"
+        value: ${{ jobs.terraform.outputs.plan_outcome }}
+      destroy_outcome:
+        description: "Outcome of terraform destroy"
+        value: ${{ jobs.terraform.outputs.destroy_outcome }}
+      validate_stdout:
+        description: "Standard output from terraform validate"
+        value: ${{ jobs.terraform.outputs.validate_stdout }}
+      plan_stdout:
+        description: "Standard output from terraform plan"
+        value: ${{ jobs.terraform.outputs.plan_stdout }}
+      destroy_stdout:
+        description: "Standard output from terraform destroy"
+        value: ${{ jobs.terraform.outputs.destroy_stdout }}
+
+env:
+  TF_LOG: INFO
+  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      repo_creation_date: ${{ steps.get_date.outputs.repo_creation_date }}
+      repo_creator: ${{ steps.get_creator.outputs.repo_creator }}
+      repo_tag_project: ${{ steps.get_tag_project.outputs.repo_tag_project }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get repo creation date
+        id: get_date
+        run: |
+          date=$(git log --reverse --format=%aI | head -n 1)
+          echo "::set-output name=repo_creation_date::$date"
+
+      - name: Get repo creator
+        id: get_creator
+        run: |
+          creator=$(git log --reverse --format='%aN' | head -n 1)
+          echo "::set-output name=repo_creator::$creator"
+
+      - name: Get TagProject
+        id: get_tag_project
+        run: |
+          # Neste exemplo, usamos o nome do repositório como base
+          tag_project=$(echo "${GITHUB_REPOSITORY##*/}" | sed -E 's/[^a-zA-Z0-9-]/-/g' | sed -E 's/^-+|-+$//g' | cut -c1-63)
+          echo "::set-output name=repo_tag_project::$tag_project"
+
+
+  terraform:
+    runs-on: ubuntu-latest
+    needs: prepare
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      PROJECT_NAME: ${{ needs.prepare.outputs.repo_tag_project }}
+      REPO_OWNER: ${{ github.repository_owner }}
+      TF_VAR_creation_date: ${{ needs.prepare.outputs.repo_creation_date }}
+      TF_VAR_author: ${{ needs.prepare.outputs.repo_creator }}
+      TF_VAR_TagProject: ${{ needs.prepare.outputs.repo_tag_project }}
+      TF_VAR_TagEnv: ${{ inputs.environment }}
+      TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+
+    outputs:
+      fmt_outcome: ${{ steps.fmt.outcome }}
+      init_outcome: ${{ steps.init.outcome }}
+      validate_outcome: ${{ steps.validate.outcome }}
+      plan_outcome: ${{ steps.plan.outcome }}
+      destroy_outcome: ${{ steps.destroy.outcome }}
+      validate_stdout: ${{ steps.validate.outputs.stdout }}
+      plan_stdout: ${{ steps.plan.outputs.stdout }}
+      destroy_stdout: ${{ steps.destroy.outputs.stdout }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT }}:role/github-actions-role-${{ env.REPO_OWNER }}-${{ env.AWS_REGION }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Read destroy configuration
+        id: read-destroy-config
+        run: |
+          DESTROY="$(jq -r '.${{ env.ENVIRONMENT }}' ./infra/destroy_config.json)"
+          DESTROY_S3_ECR="$(jq -r '.destroy_s3_ecr' ./infra/destroy_config.json)"
+          echo "destroy=$(echo $DESTROY)" >> $GITHUB_OUTPUT
+          echo "destroy_s3_ecr=$(echo $DESTROY_S3_ECR)" >> $GITHUB_OUTPUT
+
+      - name: Terraform Fmt
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        id: init
+        run: make init
+
+      - name: Terraform Validate
+        id: validate
+        run: make validate
+
+      - name: Terraform Test
+        id: test
+        run: make tf-test
+
+      - name: Empty S3 Buckets and ECR Repositories (Conditional)
+        if: steps.read-destroy-config.outputs.destroy == 'true' && steps.read-destroy-config.outputs.destroy_s3_ecr == 'true'
+        run: make empty-s3-ecr
+
+      - name: Terraform Destroy
+        id: destroy
+        if: steps.read-destroy-config.outputs.destroy == 'true'
+        run: make destroy
+
+      - name: Terraform Plan & Apply
+        id: plan
+        if: steps.read-destroy-config.outputs.destroy != 'true'
+        run: make plan-apply
+
+      - name: Upload SSH Private Key as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ec2-keys-${{ env.ENVIRONMENT }}
+          path: "infra/*.pem"

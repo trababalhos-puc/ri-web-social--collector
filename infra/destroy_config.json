@@ -1,0 +1,6 @@
+{
+  "dev": false,
+  "prod": true,
+  "stg": true,
+  "destroy_s3_ecr": false
+}

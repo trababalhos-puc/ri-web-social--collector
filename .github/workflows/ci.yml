@@ -1,0 +1,93 @@
+name: "Continuous Integration"
+
+on:
+  push:
+    branches-ignore: [ main, staging ]
+  pull_request:
+    branches: [ main, staging ]
+
+permissions:
+  id-token: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v4
+
+      - name: Setup a local virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+
+      - uses: actions/cache@v3
+        name: Cache virtual environment
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Lint code
+        run: make lint
+
+      - name: Run tests and coverage
+        run: make test
+
+  security:
+    needs: security
+    uses: ./.github/workflows/security_scan.yml
+
+  check-pr:
+    uses: ./.github/workflows/check-pr.yml
+
+  infracost:
+    if: github.event_name == 'pull_request'
+    needs: security
+    uses: ./.github/workflows/infracost-workflow.yml
+    with:
+      environment: "dev"
+    secrets:
+      INFRACOST_TOKEN: ${{ secrets.INFRACOST_TOKEN }}
+
+  terraform-dev:
+    uses: ./.github/workflows/terraform-core.yml
+    needs: [test, security, check-pr]
+    with:
+      environment: "dev"
+    secrets:
+      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+  pr-comment:
+    if: github.event_name == 'pull_request'
+    needs: [
+      terraform-dev,
+      check-pr,
+#      infracost
+    ]
+    uses: ./.github/workflows/pr-comment.yml
+    with:
+      environment: "dev"
+      fmt_outcome: ${{ needs.terraform-dev.outputs.fmt_outcome }}
+      init_outcome: ${{ needs.terraform-dev.outputs.init_outcome }}
+      validate_outcome: ${{ needs.terraform-dev.outputs.validate_outcome }}
+      plan_outcome: ${{ needs.terraform-dev.outputs.plan_outcome }}
+      destroy_outcome: ${{ needs.terraform-dev.outputs.destroy_outcome }}
+      validate_stdout: ${{ needs.terraform-dev.outputs.validate_stdout }}
+      plan_stdout: ${{ needs.terraform-dev.outputs.plan_stdout }}
+      destroy_stdout: ${{ needs.terraform-dev.outputs.destroy_stdout }}
+      infracost_status: ${{ needs.infracost.outputs.cost_status }}
+      pr_exists: ${{ needs.check-pr.outputs.pr_exists }}

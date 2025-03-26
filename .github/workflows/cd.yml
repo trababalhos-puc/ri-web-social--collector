@@ -1,0 +1,89 @@
+name: "Continuous Deployment"
+
+on:
+  push:
+    branches: [ main, staging ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'stg'
+        type: choice
+        options:
+          - stg
+          - prod
+
+permissions:
+  id-token: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  determine-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+    steps:
+      - name: Set environment based on trigger
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+            echo "environment=stg" >> $GITHUB_OUTPUT
+          else
+            echo "environment=stg" >> $GITHUB_OUTPUT
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v4
+
+      - name: Setup a local virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+
+      - uses: actions/cache@v3
+        name: Cache virtual environment
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Lint code
+        run: make lint
+
+      - name: Run tests and coverage
+        run: make test
+
+  security:
+    needs: test
+    uses: ./.github/workflows/security_scan.yml
+
+  check-pr:
+    uses: ./.github/workflows/check-pr.yml
+
+  terraform-deploy:
+    needs: [determine-environment, test, security, check-pr]
+    uses: ./.github/workflows/terraform-core.yml
+    with:
+      environment: ${{ needs.determine-environment.outputs.environment }}
+    secrets:
+      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}

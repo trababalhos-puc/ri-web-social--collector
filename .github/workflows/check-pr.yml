@@ -1,0 +1,36 @@
+name: "Check Pull Request Workflow"
+
+on:
+  workflow_call:
+    outputs:
+      should_run_terraform:
+        description: "Whether terraform should run or not"
+        value: ${{ jobs.check-open-pull-request.outputs.should_run_terraform }}
+      pr_exists:
+        description: "Whether a PR exists"
+        value: ${{ jobs.check-open-pull-request.outputs.pr_exists }}
+
+
+jobs:
+  check-open-pull-request:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run_terraform: ${{ steps.set_output.outputs.should_run_terraform }}
+      pr_exists: ${{ steps.set_output.outputs.pr_exists }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if a Pull Request is Open
+        id: check_pr
+        run: |
+          chmod +x ./.github/deploy/check_pull_request.sh
+          ./.github/deploy/check_pull_request.sh "${{ github.ref_name }}" "${{ github.event_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Output
+        id: set_output
+        run: |
+          echo "should_run_terraform=${{ env.should_run_terraform }}" >> $GITHUB_OUTPUT
+          echo "pr_exists=${{ env.pr_exists }}" >> $GITHUB_OUTPUT

@@ -1,0 +1,7 @@
+# Configuração dos templates de issues para o repositório
+
+blank_issues_enabled: false
+contact_links:
+  - name: "Suporte"
+    url: "https://github.com/seu-usuario/seu-repositorio/issues/new?assignees=&labels=question&template=question.md&title="
+    about: "Para dúvidas gerais ou solicitações de suporte."

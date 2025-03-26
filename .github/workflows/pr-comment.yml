@@ -1,0 +1,118 @@
+name: "PR Comment Workflow"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      fmt_outcome:
+        type: string
+        required: false
+        default: ''
+      init_outcome:
+        type: string
+        required: false
+        default: ''
+      validate_outcome:
+        type: string
+        required: false
+        default: ''
+      plan_outcome:
+        type: string
+        required: false
+        default: ''
+      destroy_outcome:
+        type: string
+        required: false
+        default: ''
+      validate_stdout:
+        type: string
+        required: false
+        default: ''
+      plan_stdout:
+        type: string
+        required: false
+        default: ''
+      destroy_stdout:
+        type: string
+        required: false
+        default: ''
+      infracost_status:
+        type: string
+        required: false
+        default: ''
+      pr_exists:
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  post-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Infracost Output Artifact
+        id: download_artifact
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: infracost-output-${{ inputs.environment }}
+          merge-multiple: false
+          repository: AriHenrique/template_project
+          run-id: ${{ github.run_id }}
+
+      - name: Check Artifact Download Status
+        id: check_download
+        run: |
+          if [ -f infracost_output.txt ]; then
+            echo "artifact_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "artifact_exists=false" >> $GITHUB_OUTPUT
+            echo "Creating empty infracost file for workflow to continue"
+            echo "No cost estimation found." > infracost_output.txt
+          fi
+        shell: bash
+
+      - name: Read Infracost Output
+        id: read_infracost_output
+        run: |
+          infracost_output=$(cat infracost_output.txt)
+          echo "output<<EOF" >> $GITHUB_ENV
+          echo "$infracost_output" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Post Comment on PR with CI/CD Results
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const script = require('./.github/deploy/js/generate_pr_comment.js');
+            return await script({
+              github,
+              context,
+              core: {
+                getInput: (name) => {
+                  const inputs = {
+                    fmt_outcome: 'success',
+                    pr_exists: '',
+                    init_outcome: 'success',
+                    validate_outcome: 'success',
+                    plan_outcome: 'skipped',
+                    destroy_outcome: 'success',
+                    validate_stdout: 'Success! The configuration is valid.',
+                    plan_stdout: '',
+                    destroy_stdout: 'No changes. No objects need to be destroyed.\n\nEither you have not created any objects yet or the existing objects were already deleted outside of Terraform.\n\nDestroy complete! Resources: 0 destroyed.',
+                    infracost_output: process.env.output.trim(),
+                    infracost_status: '',
+                    actor: 'AriHenrique',
+                    event_name: 'pull_request',
+                    environment: 'dev'
+                  };
+                  return inputs[name] || '';
+                }
+              }
+            });

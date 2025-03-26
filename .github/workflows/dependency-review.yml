@@ -1,0 +1,32 @@
+name: 'Python Dependency Check'
+on: [pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v3
+
+      - name: 'Setup Python'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: 'Install safety'
+        run: pip install safety
+
+      - name: 'Check Python Dependencies'
+        run: |
+          if [ -f "requirements.txt" ]; then
+            safety check -r requirements.txt || echo "Vulnerabilities found, but continuing workflow"
+          elif [ -f "Pipfile.lock" ]; then
+            safety check --file Pipfile.lock || echo "Vulnerabilities found, but continuing workflow"
+          elif [ -f "poetry.lock" ]; then
+            safety check --file poetry.lock || echo "Vulnerabilities found, but continuing workflow"
+          else
+            echo "No Python dependency files found"
+          fi
