@@ -80,6 +80,7 @@ jobs:
     uses: ./.github/workflows/check-pr.yml
 
   terraform-deploy:
+    if: github.actor != 'dependabot[bot]'
     needs: [determine-environment, test, security, check-pr]
     uses: ./.github/workflows/terraform-core.yml
     with:

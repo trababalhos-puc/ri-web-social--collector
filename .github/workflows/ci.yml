@@ -54,7 +54,7 @@ jobs:
     uses: ./.github/workflows/check-pr.yml
 
   infracost:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     needs: security
     uses: ./.github/workflows/infracost-workflow.yml
     with:
@@ -63,6 +63,7 @@ jobs:
       INFRACOST_TOKEN: ${{ secrets.INFRACOST_TOKEN }}
 
   terraform-dev:
+    if: github.actor != 'dependabot[bot]'
     uses: ./.github/workflows/terraform-core.yml
     needs: [test, security, check-pr]
     with:
@@ -72,7 +73,7 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
 
   pr-comment:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     needs: [
       terraform-dev,
       check-pr,
