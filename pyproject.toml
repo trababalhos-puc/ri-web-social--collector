@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "llm-doc"
+name = "ri-web-social"
 version = "0.1.0"
 description = ""
 package-mode = false
