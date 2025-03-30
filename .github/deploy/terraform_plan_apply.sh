@@ -2,7 +2,6 @@
 
 set -e
 
-# Executa plan e apply do Terraform
 cd infra \
   && (terraform workspace select -or-create=true "$1" || terraform workspace new "$1") \
   && terraform plan \

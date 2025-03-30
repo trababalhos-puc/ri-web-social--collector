@@ -2,7 +2,6 @@
 
 set -e
 
-# Destroy dos recursos do Terraform
 cd infra \
   && terraform workspace select $1 \
   || terraform workspace new $1 \

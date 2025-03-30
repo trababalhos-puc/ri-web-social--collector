@@ -1,0 +1,7 @@
+selenium
+requests
+beautifulsoup4
+boto3
+awswrangler
+webdriver-manager
+chardet

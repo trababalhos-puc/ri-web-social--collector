@@ -2,7 +2,6 @@
 
 set -e
 
-# Configura o nome do bucket S3 para state files
 base_name="$1-$2--tfstates"
 base_repo="$3"
 

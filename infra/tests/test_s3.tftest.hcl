@@ -1,10 +1,10 @@
 mock_provider "aws" {}
 
 variables {
-  TagEnv     = "dev"
-  TagProject = "meu-projeto"
+  TagEnv       = "dev"
+  TagProject   = "meu-projeto"
   bucket_names = ["dados", "logs"]
-  region     = "us-east-1"
+  region       = "us-east-1"
 
   tags = {
     Environment = "dev"
@@ -46,7 +46,7 @@ run "test_s3_bucket_creation" {
     condition = alltrue([
       for bucket_name in values(output.name) :
       length(bucket_name) <= 63
-      ])
+    ])
     error_message = "Nome do bucket excede 63 caracteres"
   }
 }

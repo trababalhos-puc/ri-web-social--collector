@@ -2,7 +2,6 @@
 
 set -e
 
-# Configura e executa o Infracost
 infracost configure set api_key $1
 git fetch --unshallow
 infracost breakdown --path . > infracost_output.txt

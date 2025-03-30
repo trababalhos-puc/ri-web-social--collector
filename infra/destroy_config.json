@@ -1,6 +1,6 @@
 {
-  "dev": false,
-  "prod": true,
+  "dev": true,
   "stg": true,
-  "destroy_s3_ecr": false
+  "prod": false,
+  "destroy_s3_ecr": true
 }

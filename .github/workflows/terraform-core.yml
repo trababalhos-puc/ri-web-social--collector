@@ -122,22 +122,6 @@ jobs:
           echo "destroy=$(echo $DESTROY)" >> $GITHUB_OUTPUT
           echo "destroy_s3_ecr=$(echo $DESTROY_S3_ECR)" >> $GITHUB_OUTPUT
 
-      - name: Terraform Fmt
-        id: fmt
-        run: terraform fmt -check
-
-      - name: Terraform Init
-        id: init
-        run: make init
-
-      - name: Terraform Validate
-        id: validate
-        run: make validate
-
-      - name: Terraform Test
-        id: test
-        run: make tf-test
-
       - name: Empty S3 Buckets and ECR Repositories (Conditional)
         if: steps.read-destroy-config.outputs.destroy == 'true' && steps.read-destroy-config.outputs.destroy_s3_ecr == 'true'
         run: make empty-s3-ecr
@@ -147,10 +131,10 @@ jobs:
         if: steps.read-destroy-config.outputs.destroy == 'true'
         run: make destroy
 
-      - name: Terraform Plan & Apply
-        id: plan
+      - name: Terraform Deploy
+        id: deploy
         if: steps.read-destroy-config.outputs.destroy != 'true'
-        run: make plan-apply
+        run: make deploy
 
       - name: Upload SSH Private Key as Artifact
         uses: actions/upload-artifact@v4

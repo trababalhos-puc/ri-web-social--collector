@@ -15,6 +15,12 @@ sphinxawesome-theme = "^5.3.2"
 rst2pdf = "^0.103.1"
 sphinx-mermaid = "^0.0.8"
 graphviz = "^0.20.3"
+selenium = "^4.30.0"
+requests = "^2.32.3"
+beautifulsoup4 = "^4.13.3"
+webdriver-manager = "^4.0.2"
+boto3 = "^1.37.21"
+awswrangler = "^3.11.0"
 
 
 [tool.poetry.group.dev.dependencies]
