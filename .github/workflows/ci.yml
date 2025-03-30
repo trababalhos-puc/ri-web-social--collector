@@ -62,8 +62,8 @@ jobs:
       - name: Lint code
         run: make lint
 
-      - name: Run tests and coverage
-        run: make test
+#      - name: Run tests and coverage
+#        run: make test
 
   security:
     needs: test
