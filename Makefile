@@ -26,7 +26,7 @@ REPO_NAME := $(shell basename `git rev-parse --show-toplevel`)
 REPO_CREATION_DATE := $(shell git log --reverse --format=%aI | head -n 1)
 REPO_CREATOR := $(shell git log --reverse --format='%aN' | head -n 1)
 
-BACKEND_BUCKET := $(AWS_REGION)-$(REPOSITORY_OWNER)--tfstates
+BACKEND_BUCKET := $(AWS_REGION)-$(REPOSITORY_OWNER)-tfstates
 BACKEND_KEY := $(REPO_NAME)
 DYNAMODB_TABLE := $(REPOSITORY_OWNER)-$(AWS_REGION)-terraform-lock
 
@@ -48,9 +48,7 @@ TF_COMMON_VARS := -var "creation_date=$(REPO_CREATION_DATE)" \
 # Seção: Ambiente Virtual Python
 ##############################
 
-install: venv-check
-
-install-full: install setup-chrome
+install: venv-check setup-chrome
 
 venv-check: src/requirements.txt
 	@if [ ! -f $(VENV_PYTHON) ]; then \

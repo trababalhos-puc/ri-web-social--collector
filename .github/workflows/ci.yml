@@ -57,7 +57,7 @@ jobs:
           key: venv-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
-        run: make install
+        run: make install-p
 
       - name: Lint code
         run: make lint
