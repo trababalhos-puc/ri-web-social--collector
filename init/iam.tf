@@ -9,8 +9,13 @@ resource "aws_iam_policy" "github_actions_policy" {
         Effect   = "Allow",
         Action   = [
           "s3:*",
-          "lambda:*",
-          "ec2:*"
+          "ecs:*",
+          "ecr:*",
+          "iam:CreatePolicy",
+          "iam:CreateRole",
+          "events:*",
+          "logs:*",
+          "elasticloadbalancing:*"
         ],
         Resource = "*"
       }
