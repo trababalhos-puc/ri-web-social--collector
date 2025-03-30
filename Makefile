@@ -26,7 +26,7 @@ REPO_NAME := $(shell basename `git rev-parse --show-toplevel`)
 REPO_CREATION_DATE := $(shell git log --reverse --format=%aI | head -n 1)
 REPO_CREATOR := $(shell git log --reverse --format='%aN' | head -n 1)
 
-BACKEND_BUCKET := $(AWS_REGION)-$(REPOSITORY_OWNER)-tfstates
+BACKEND_BUCKET := $(AWS_REGION)-$(REPOSITORY_OWNER)--tfstates
 BACKEND_KEY := $(REPO_NAME)
 DYNAMODB_TABLE := $(REPOSITORY_OWNER)-$(AWS_REGION)-terraform-lock
 
