@@ -130,7 +130,7 @@ jobs:
       - name: Terraform Destroy
         id: destroy
         if: steps.read-destroy-config.outputs.destroy == 'true'
-        run: make destroy
+        run: make init && make destroy
 
       - name: Terraform Deploy
         id: deploy
