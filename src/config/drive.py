@@ -12,16 +12,14 @@ inicializar o WebDriver Selenium (DriverManager).
 """
 
 import logging
-from tempfile import mkdtemp
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.os_manager import ChromeType
 
 logging.basicConfig(
-    level=logging.INFO, format='%(asctime)s [%(levelname)s] %(name)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
@@ -53,15 +51,15 @@ class DriverManager:
         chrome_options = Options()
 
         default_options = [
-            '--disable-gpu',
-            '--ignore-certificate-errors',
-            '--disable-extensions',
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
+            "--disable-gpu",
+            "--ignore-certificate-errors",
+            "--disable-extensions",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
         ]
 
         if headless:
-            chrome_options.add_argument('--headless')
+            chrome_options.add_argument("--headless")
 
         for option in default_options:
             chrome_options.add_argument(option)

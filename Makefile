@@ -20,15 +20,17 @@ PYTHON = poetry run python
 AWS_REGION ?= us-east-1
 ENVIRONMENT ?= dev
 TFVARS_PATH ?= ./envs/$(ENVIRONMENT)/terraform.tfvars
-REPOSITORY_OWNER := $(shell git remote get-url origin | sed -n 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/p')
+ifeq ($(origin REPO_OWNER),undefined)
+    REPO_OWNER := $(shell git remote get-url origin | sed -n 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/p')
+endif
 
 REPO_NAME := $(shell basename `git rev-parse --show-toplevel`)
 REPO_CREATION_DATE := $(shell git log --reverse --format=%aI | head -n 1)
 REPO_CREATOR := $(shell git log --reverse --format='%aN' | head -n 1)
 
-BACKEND_BUCKET := $(AWS_REGION)-$(REPOSITORY_OWNER)--tfstates
+BACKEND_BUCKET := $(AWS_REGION)-$(REPO_OWNER)--tfstates
 BACKEND_KEY := $(REPO_NAME)
-DYNAMODB_TABLE := $(REPOSITORY_OWNER)-$(AWS_REGION)-terraform-lock
+DYNAMODB_TABLE := $(REPO_OWNER)-$(AWS_REGION)-terraform-lock
 
 TF_COMMON_VARS := -var "creation_date=$(REPO_CREATION_DATE)" \
                  -var "author=$(REPO_CREATOR)" \
@@ -229,6 +231,6 @@ help:
 	@echo "VARIÁVEIS:"
 	@echo "  ENVIRONMENT       - Ambiente (padrão: dev)"
 	@echo "  AWS_REGION        - Região AWS (padrão: us-east-1)"
-	@echo "  REPOSITORY_OWNER  - Proprietário do repositório (extraído automaticamente do Git)"
+	@echo "  REPO_OWNER  - Proprietário do repositório (extraído automaticamente do Git)"
 	@echo "  TFVARS_PATH       - Caminho para o arquivo tfvars"
 	@echo "=========================================================="
