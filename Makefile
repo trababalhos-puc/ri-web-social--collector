@@ -20,7 +20,7 @@ PYTHON = poetry run python
 AWS_REGION ?= us-east-1
 ENVIRONMENT ?= dev
 TFVARS_PATH ?= ./envs/$(ENVIRONMENT)/terraform.tfvars
-REPO_OWNER := $(shell git remote get-url origin | sed -n 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/p')
+#REPO_OWNER := $(shell git remote get-url origin | sed -n 's/.*[:/]\([^/]*\)\/[^/]*\.git/\1/p')
 
 REPO_NAME := $(shell basename `git rev-parse --show-toplevel`)
 REPO_CREATION_DATE := $(shell git log --reverse --format=%aI | head -n 1)
