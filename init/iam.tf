@@ -15,7 +15,8 @@ resource "aws_iam_policy" "github_actions_policy" {
           "iam:CreateRole",
           "events:*",
           "logs:*",
-          "elasticloadbalancing:*"
+          "elasticloadbalancing:*",
+          "ec2:*"
         ],
         Resource = "*"
       }
