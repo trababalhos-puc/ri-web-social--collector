@@ -48,7 +48,9 @@ TF_COMMON_VARS := -var "creation_date=$(REPO_CREATION_DATE)" \
 # Seção: Ambiente Virtual Python
 ##############################
 
-install: venv-check setup-chrome
+install: venv-check
+
+install-full: install setup-chrome
 
 venv-check: src/requirements.txt
 	@if [ ! -f $(VENV_PYTHON) ]; then \

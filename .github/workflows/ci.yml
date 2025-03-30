@@ -72,14 +72,14 @@ jobs:
   check-pr:
     uses: ./.github/workflows/check-pr.yml
 
-  infracost:
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
-    needs: [test, security, check-infra-changes]
-    uses: ./.github/workflows/infracost-workflow.yml
-    with:
-      environment: "dev"
-    secrets:
-      INFRACOST_TOKEN: ${{ secrets.INFRACOST_TOKEN }}
+#  infracost:
+#    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
+#    needs: [test, security, check-infra-changes]
+#    uses: ./.github/workflows/infracost-workflow.yml
+#    with:
+#      environment: "dev"
+#    secrets:
+#      INFRACOST_TOKEN: ${{ secrets.INFRACOST_TOKEN }}
 
   terraform-dev:
     if: github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
