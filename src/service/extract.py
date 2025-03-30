@@ -1,54 +1,65 @@
-import re
-import csv
 import os
-import boto3
+import re
 import time
 import unicodedata
-import chardet
 from datetime import datetime
 
-from config import drive
-from io import BytesIO
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import boto3
+import chardet
 from selenium.common.exceptions import StaleElementReferenceException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+from config import drive
 
 
 class IPEAExtractor:
-    def __init__(self, javascript_command, bucket_name=None, s3_key_prefix='ipeadata', headless: bool = False):
-        self.url = 'http://www.ipeadata.gov.br/Default.aspx'
+    def __init__(
+        self,
+        javascript_command,
+        bucket_name=None,
+        s3_key_prefix="ipeadata",
+        headless: bool = False,
+    ):
+        self.url = "http://www.ipeadata.gov.br/Default.aspx"
         self.javascript_command = javascript_command
         self.bucket_name = bucket_name
         self.s3_key_prefix = s3_key_prefix
         self.driver = drive.DriverManager().start_driver(headless=headless)
-        self.s3 = boto3.client('s3') if bucket_name else None
+        self.s3 = boto3.client("s3") if bucket_name else None
 
     @staticmethod
     def __sanitize_filename(input_string):
-        normalized = unicodedata.normalize('NFKD', input_string)
-        ascii_only = normalized.encode('ascii', 'ignore').decode('ascii')
-        sanitized = re.sub(r'[^\w\-_\.=]', '_', ascii_only)
-        sanitized = re.sub(r'_+', '_', sanitized)
-        return sanitized.strip('_')
+        normalized = unicodedata.normalize("NFKD", input_string)
+        ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
+        sanitized = re.sub(r"[^\w\-_\.=]", "_", ascii_only)
+        sanitized = re.sub(r"_+", "_", sanitized)
+        return sanitized.strip("_")
 
     @staticmethod
     def __convert_to_utf8(html_content):
-        result = chardet.detect(html_content if isinstance(html_content, bytes) else html_content.encode())
-        original_encoding = result['encoding']
+        result = chardet.detect(
+            html_content if isinstance(html_content, bytes) else html_content.encode()
+        )
+        original_encoding = result["encoding"]
         try:
-            decoded = html_content.decode(original_encoding) if isinstance(html_content, bytes) else html_content
-            return decoded.encode('utf-8')
-        except:
-            return html_content.encode('utf-8', errors='ignore')
+            decoded = (
+                html_content.decode(original_encoding)
+                if isinstance(html_content, bytes)
+                else html_content
+            )
+            return decoded.encode("utf-8")
+        except Exception:
+            return html_content.encode("utf-8", errors="ignore")
 
     @staticmethod
     def __convert_date(date):
-        data_extract = date.split('-')[1].strip()
+        data_extract = date.split("-")[1].strip()
         data_extract = data_extract.rstrip("T")
-        if '/' in data_extract:
+        if "/" in data_extract:
             date_obj = datetime.strptime(data_extract, "%d/%m/%Y")
-        elif '.' in data_extract:
+        elif "." in data_extract:
             date_obj = datetime.strptime(data_extract, "%Y.%m")
         elif len(data_extract) == 4:
             year = int(data_extract)
@@ -58,7 +69,6 @@ class IPEAExtractor:
             raise ValueError("Formato de data desconhecido.")
 
         return date_obj.strftime("%Y-%m-%d")
-
 
     def run_extraction(self):
         self.driver.get(self.url)
@@ -76,17 +86,17 @@ class IPEAExtractor:
         dados = []
         max_attempts = 3
 
-        for i in range(1, len(table.find_elements(By.TAG_NAME, 'tr'))):
+        for i in range(1, len(table.find_elements(By.TAG_NAME, "tr"))):
             attempts = 0
             while attempts < max_attempts:
                 try:
-                    rows = table.find_elements(By.TAG_NAME, 'tr')
-                    cells = rows[i].find_elements(By.TAG_NAME, 'td')
+                    rows = table.find_elements(By.TAG_NAME, "tr")
+                    cells = rows[i].find_elements(By.TAG_NAME, "td")
                     if not cells:
                         break
                     try:
-                        link_element = cells[1].find_element(By.TAG_NAME, 'a')
-                        href = link_element.get_attribute('href')
+                        link_element = cells[1].find_element(By.TAG_NAME, "a")
+                        href = link_element.get_attribute("href")
                         nome = link_element.text
                     except Exception:
                         break
@@ -113,16 +123,22 @@ class IPEAExtractor:
                 except StaleElementReferenceException:
                     attempts += 1
                     if attempts == max_attempts:
-                        print(f"Failed to process row {i} after {max_attempts} attempts")
+                        print(
+                            f"Failed to process row {i} after {max_attempts} attempts"
+                        )
                         break
         self.driver.quit()
         return dados
 
-
     def __upload_to_s3(self, file_name, key, content_bytes):
-        _key = f"{self.s3_key_prefix}/{key}/{file_name}".replace('//', '/')
+        _key = f"{self.s3_key_prefix}/{key}/{file_name}".replace("//", "/")
         if self.bucket_name:
-            self.s3.put_object(Bucket=self.bucket_name, Key=_key, Body=content_bytes, ContentType='text/html')
+            self.s3.put_object(
+                Bucket=self.bucket_name,
+                Key=_key,
+                Body=content_bytes,
+                ContentType="text/html",
+            )
             print(f"Arquivo salvo no S3 em: s3://{self.bucket_name}/{key}")
         else:
             folder = f"{self.s3_key_prefix}/{key}"
@@ -136,8 +152,7 @@ class IPEAExtractor:
         WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "table"))
         )
-        folder_name = self.__sanitize_filename('=='.join(data[1:4]))
-        file_name = self.__sanitize_filename('_'.join(data)) + '.html'
+        folder_name = self.__sanitize_filename("==".join(data[1:4]))
+        file_name = self.__sanitize_filename("_".join(data)) + ".html"
         html_utf8 = self.__convert_to_utf8(self.driver.page_source)
-        self.__upload_to_s3(file_name , f'date={data[-1]}/{folder_name}', html_utf8)
-
+        self.__upload_to_s3(file_name, f"date={data[-1]}/{folder_name}", html_utf8)

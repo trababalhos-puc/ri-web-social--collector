@@ -1,5 +1,5 @@
 {
-  "dev": true,
+  "dev": false,
   "stg": true,
   "prod": false,
   "destroy_s3_ecr": true
