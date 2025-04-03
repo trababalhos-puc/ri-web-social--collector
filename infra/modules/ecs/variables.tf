@@ -99,5 +99,10 @@ variable "iam_policy_arns" {
 variable "schedule_expression" {
   description = "Expressão cron para agendamento de execução da tarefa (ex: cron(0 12 * * ? *) para executar às 12:00 UTC diariamente)"
   type        = string
-  default     = "cron(0 3 * * ? *)"
+}
+
+variable "route_table_ids" {
+  description = "Lista de IDs das tabelas de rotas para o endpoint do S3"
+  type        = list(string)
+  default     = []
 }
