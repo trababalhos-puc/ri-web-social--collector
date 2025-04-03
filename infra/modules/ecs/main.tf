@@ -86,7 +86,6 @@ resource "aws_cloudwatch_event_rule" "scheduled_task" {
   tags = var.tags
 }
 
-# Target para o EventBridge que executa a tarefa ECS
 resource "aws_cloudwatch_event_target" "ecs_scheduled_task" {
   rule      = aws_cloudwatch_event_rule.scheduled_task.name
   target_id = "${var.TagEnv}-${var.TagProject}-target"
@@ -107,7 +106,6 @@ resource "aws_cloudwatch_event_target" "ecs_scheduled_task" {
   }
 }
 
-# IAM Role para o EventBridge executar tarefas no ECS
 resource "aws_iam_role" "events_role" {
   name = "${var.TagEnv}-${var.TagProject}-events-role"
 
@@ -127,7 +125,6 @@ resource "aws_iam_role" "events_role" {
   tags = var.tags
 }
 
-# IAM Policy para permitir que o EventBridge execute tarefas no ECS
 resource "aws_iam_policy" "events_policy" {
   name        = "${var.TagEnv}-${var.TagProject}-events-policy"
   description = "Permite que o EventBridge execute tarefas no ECS"
@@ -157,7 +154,6 @@ resource "aws_iam_policy" "events_policy" {
   })
 }
 
-# Anexar a política IAM ao role do EventBridge
 resource "aws_iam_role_policy_attachment" "events_role_policy" {
   role       = aws_iam_role.events_role.name
   policy_arn = aws_iam_policy.events_policy.arn
@@ -170,7 +166,6 @@ resource "aws_cloudwatch_log_group" "app_logs" {
   tags = var.tags
 }
 
-# IAM Roles para o ECS
 resource "aws_iam_role" "ecs_execution_role" {
   name = "${var.TagEnv}-${var.TagProject}-ecs-execution-role"
 
@@ -214,14 +209,12 @@ resource "aws_iam_role" "ecs_task_role" {
   tags = var.tags
 }
 
-# Anexa políticas IAM adicionais ao task role do ECS
 resource "aws_iam_role_policy_attachment" "ecs_task_role_policy_attachments" {
   count      = length(var.iam_policy_arns)
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = var.iam_policy_arns[count.index]
 }
 
-# Security Group para o ECS Service
 resource "aws_security_group" "ecs_service_sg" {
   name        = "${var.TagEnv}-${var.TagProject}-ecs-service-sg"
   description = "Security group for the ECS service"
@@ -244,19 +237,80 @@ resource "aws_security_group" "ecs_service_sg" {
   tags = var.tags
 }
 
-# Application Load Balancer - você pode decidir se quer manter ou comentar
-# dependendo se precisa de acesso externo ao container
-# resource "aws_lb" "app_lb" {
-#   name               = "${var.TagEnv}-${var.TagProject}-alb"
-#   internal           = false
-#   load_balancer_type = "application"
-#   security_groups    = [aws_security_group.alb_sg.id]
-#   subnets            = var.subnet_ids
-#
-#   enable_deletion_protection = false
-#
-#   tags = var.tags
-# }
+# Security Group para VPC Endpoints
+resource "aws_security_group" "vpc_endpoint_sg" {
+  name        = "${var.TagEnv}-${var.TagProject}-vpce-sg"
+  description = "Security group for VPC Endpoints"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_service_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = var.tags
+}
+
+# VPC Endpoint para ECR API
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = var.vpc_id
+  service_name        = "com.amazonaws.${var.region}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoint_sg.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name = "${var.TagEnv}-${var.TagProject}-ecr-api-endpoint"
+  })
+}
+
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = var.vpc_id
+  service_name        = "com.amazonaws.${var.region}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoint_sg.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name = "${var.TagEnv}-${var.TagProject}-ecr-dkr-endpoint"
+  })
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = var.vpc_id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = var.route_table_ids
+
+  tags = merge(var.tags, {
+    Name = "${var.TagEnv}-${var.TagProject}-s3-endpoint"
+  })
+}
+
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = var.vpc_id
+  service_name        = "com.amazonaws.${var.region}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoint_sg.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name = "${var.TagEnv}-${var.TagProject}-logs-endpoint"
+  })
+}
 
 resource "aws_security_group" "alb_sg" {
   name        = "${var.TagEnv}-${var.TagProject}-alb-sg"

@@ -69,4 +69,5 @@ module "ecs" {
   health_check_path     = "/"
   enable_https          = false
   tags                  = local.common_tags
+  schedule_expression   = "rate(1 day)"
 }

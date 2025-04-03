@@ -4,7 +4,7 @@ from service.extract import IPEAExtractor
 
 BUCKET = os.getenv(
     "BUCKET_NAME",
-    "dev-ri-web-social--collector--trab",
+    "prod-ri-web-social--collector--trab",
     # , None
 )
 
