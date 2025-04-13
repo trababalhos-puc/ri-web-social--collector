@@ -57,12 +57,16 @@ jobs:
           key: venv-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
-        run: make install-p
+        run: poetry install --with dev
+
+      - name: Verifica se Ruff está disponível
+        run: poetry run which ruff
 
       - name: Lint code
         run: make lint
 
-#      - name: Run tests and coverage
+
+  #      - name: Run tests and coverage
 #        run: make test
 
   security:
