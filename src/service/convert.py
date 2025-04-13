@@ -4,6 +4,7 @@ import tempfile
 import shutil
 import requests
 
+
 def pdf_to_html_string(pdf_source):
     """
     Converte um PDF (arquivo local ou URL) para HTML e retorna como string.
@@ -21,12 +22,12 @@ def pdf_to_html_string(pdf_source):
     temp_dir = tempfile.mkdtemp()
 
     try:
-        if pdf_source.startswith('http://') or pdf_source.startswith('https://'):
+        if pdf_source.startswith("http://") or pdf_source.startswith("https://"):
             temp_pdf = os.path.join(temp_dir, "temp_file.pdf")
             response = requests.get(pdf_source, stream=True, timeout=30)
             response.raise_for_status()
 
-            with open(temp_pdf, 'wb') as f:
+            with open(temp_pdf, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
 
@@ -34,22 +35,17 @@ def pdf_to_html_string(pdf_source):
         else:
             pdf_path = pdf_source
         temp_html_base = os.path.join(temp_dir, "temp_output")
-        subprocess.run([
-            "pdftohtml",
-            "-c",
-            "-q",
-            "-noframes",
-            "-i",
-            pdf_path,
-            temp_html_base
-        ], check=True)
+        subprocess.run(
+            ["pdftohtml", "-c", "-q", "-noframes", "-i", pdf_path, temp_html_base],
+            check=True,
+        )
         temp_html_file = temp_html_base + ".html"
 
         if not os.path.exists(temp_html_file):
-            raise FileNotFoundError(f"pdftohtml falhou ao gerar o arquivo HTML")
-        with open(temp_html_file, 'r', encoding='utf-8', errors='replace') as f:
+            raise FileNotFoundError('pdftohtml falhou ao gerar o arquivo HTML')
+        with open(temp_html_file, "r", encoding="utf-8", errors="replace") as f:
             html_content = f.read()
-        enhanced_html = f'''<!DOCTYPE html>
+        enhanced_html = f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -89,15 +85,19 @@ def pdf_to_html_string(pdf_source):
 <body>
 {html_content}
 </body>
-</html>'''
+</html>"""
 
         return enhanced_html
 
     except subprocess.CalledProcessError as e:
         try:
-            subprocess.run(["pdftohtml", "-h"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(
+                ["pdftohtml", "-h"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
         except FileNotFoundError:
-            raise Exception("pdftohtml não encontrado. Instale o pacote poppler-utils.") from e
+            raise Exception(
+                "pdftohtml não encontrado. Instale o pacote poppler-utils."
+            ) from e
         raise Exception(f"Erro ao executar pdftohtml: {e}") from e
 
     except Exception as e:
@@ -107,23 +107,30 @@ def pdf_to_html_string(pdf_source):
         if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
+
 def convert_local_pdf(pdf_path):
     try:
         html_string = pdf_to_html_string(pdf_path)
-        print(f"PDF convertido com sucesso! Tamanho do HTML: {len(html_string)} caracteres")
+        print(
+            f"PDF convertido com sucesso! Tamanho do HTML: {len(html_string)} caracteres"
+        )
         return html_string
     except Exception as e:
         print(f"Erro: {e}")
         return None
 
+
 def convert_pdf_from_url(pdf_url):
     try:
         html_string = pdf_to_html_string(pdf_url)
-        print(f"PDF da URL convertido com sucesso! Tamanho do HTML: {len(html_string)} caracteres")
+        print(
+            f"PDF da URL convertido com sucesso! Tamanho do HTML: {len(html_string)} caracteres"
+        )
         return html_string
     except Exception as e:
         print(f"Erro: {e}")
         return None
+
 
 def process_pdf_urls(urls):
     results = []

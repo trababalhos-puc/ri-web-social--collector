@@ -231,6 +231,6 @@ help:
 	@echo "VARIÁVEIS:"
 	@echo "  ENVIRONMENT       - Ambiente (padrão: dev)"
 	@echo "  AWS_REGION        - Região AWS (padrão: us-east-1)"
-	@echo "  REPO_OWNER  - Proprietário do repositório (extraído automaticamente do Git)"
+	@echo "  REPO_OWNER        - Proprietário do repositório (extraído automaticamente do Git)"
 	@echo "  TFVARS_PATH       - Caminho para o arquivo tfvars"
 	@echo "=========================================================="

@@ -5,9 +5,8 @@ from service.extract import IPEAExtractor
 BUCKET = os.getenv(
     "BUCKET_NAME",
     # "prod-ri-web-social--collector--trab",
-     None
+    None,
 )
-
 
 
 def lambda_handler(event, context):

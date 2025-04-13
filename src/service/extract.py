@@ -17,7 +17,6 @@ from service.convert import convert_pdf
 from config import drive
 
 
-
 class IPEAExtractor:
     def __init__(
         self,
@@ -138,7 +137,7 @@ class IPEAExtractor:
     def __upload_to_s3(self, file_name, key, content):
         _key = f"{self.s3_key_prefix}/{key}/{file_name}".replace("//", "/")
         if isinstance(content, str):
-            content_bytes = content.encode('utf-8')
+            content_bytes = content.encode("utf-8")
         else:
             content_bytes = content
 
@@ -181,26 +180,32 @@ class IPEAExtractor:
         """
         # Converte para string se estiver em bytes
         if isinstance(html_utf8, bytes):
-            html_utf8 = html_utf8.decode('utf-8')
+            html_utf8 = html_utf8.decode("utf-8")
         pattern = r'href=["\'](\.\.\/doc[^"\']*\.pdf)["\']'
         relative_pdf_links = re.findall(pattern, html_utf8)
         base_url = "http://www.ipeadata.gov.br"
         absolute_pdf_links = []
 
         for link in relative_pdf_links:
-            absolute_link = link.replace('../', f'{base_url}/')
+            absolute_link = link.replace("../", f"{base_url}/")
             absolute_pdf_links.append(absolute_link)
         if len(absolute_pdf_links):
             result = self.extract_pdfs_in_parallel(list(set(absolute_pdf_links)))
             for html_name in result:
-                name = html_name.split('/doc/')[-1].replace(' ', '_').replace('.pdf', '.html')
+                name = (
+                    html_name.split("/doc/")[-1]
+                    .replace(" ", "_")
+                    .replace(".pdf", ".html")
+                )
                 if result[html_name]:
                     content = result[html_name]
                     if isinstance(content, str):
-                        content = content.encode('utf-8')
-                    self.__upload_to_s3(name, f"pdf_to_html/date={datetime.now().date()}/", content)
+                        content = content.encode("utf-8")
+                    self.__upload_to_s3(
+                        name, f"pdf_to_html/date={datetime.now().date()}/", content
+                    )
         else:
-            print('nao possui links para pdfs')
+            print("nao possui links para pdfs")
 
     @staticmethod
     def extract_pdfs_in_parallel(pdf_urls, max_workers=5):
