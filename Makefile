@@ -88,7 +88,7 @@ run:
 
 install-p:
 	@echo ">>> [Make] Instalando dependências via Poetry..."
-	poetry install
+	poetry install --with dev
 
 lint:
 	@echo ">>> [Make] Executando verificação de código com Ruff..."
