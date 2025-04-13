@@ -5,3 +5,4 @@ boto3
 awswrangler
 webdriver-manager
 chardet
+pdfminer3

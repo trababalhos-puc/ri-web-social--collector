@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  ipea-extractor-aws:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - BUCKET_NAME=${BUCKET_NAME:-testes-ari}
+      - AWS_PROFILE=${AWS_PROFILE:-default}
+    volumes:
+      - ~/.aws:/root/.aws:ro
+    restart: "no"
+    command: python /app/main.py

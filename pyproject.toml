@@ -21,6 +21,7 @@ beautifulsoup4 = "^4.13.3"
 webdriver-manager = "^4.0.2"
 boto3 = "^1.37.21"
 awswrangler = "^3.11.0"
+pdfminer3 = "^2018.12.3.0"
 
 
 [tool.poetry.group.dev.dependencies]

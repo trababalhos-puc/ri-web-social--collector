@@ -3,6 +3,8 @@ import re
 import time
 import unicodedata
 from datetime import datetime
+import concurrent.futures
+
 
 import boto3
 import chardet
@@ -11,7 +13,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from service.convert import convert_pdf
 from config import drive
+
 
 
 class IPEAExtractor:
@@ -26,7 +30,7 @@ class IPEAExtractor:
         self.javascript_command = javascript_command
         self.bucket_name = bucket_name
         self.s3_key_prefix = s3_key_prefix
-        self.driver = drive.DriverManager().start_driver(headless=headless)
+        self.driver = drive.DriverManager().start_driver(headless=False)
         self.s3 = boto3.client("s3") if bucket_name else None
 
     @staticmethod
@@ -108,7 +112,8 @@ class IPEAExtractor:
                     iso_date = self.__convert_date(periodo)
                     data = [numero_js, nome, unidade, freq, periodo, iso_date]
                     print(data)
-                    self.__extract_html(data)
+                    html_utf8 = self.__extract_html(data)
+                    self.extract_pdf_links(html_utf8)
                     self.driver.back()
                     time.sleep(1)
                     iframe = WebDriverWait(self.driver, 10).until(
@@ -130,8 +135,13 @@ class IPEAExtractor:
         self.driver.quit()
         return dados
 
-    def __upload_to_s3(self, file_name, key, content_bytes):
+    def __upload_to_s3(self, file_name, key, content):
         _key = f"{self.s3_key_prefix}/{key}/{file_name}".replace("//", "/")
+        if isinstance(content, str):
+            content_bytes = content.encode('utf-8')
+        else:
+            content_bytes = content
+
         if self.bucket_name:
             self.s3.put_object(
                 Bucket=self.bucket_name,
@@ -156,3 +166,64 @@ class IPEAExtractor:
         file_name = self.__sanitize_filename("_".join(data)) + ".html"
         html_utf8 = self.__convert_to_utf8(self.driver.page_source)
         self.__upload_to_s3(file_name, f"date={data[-1]}/{folder_name}", html_utf8)
+        return html_utf8
+
+    def extract_pdf_links(self, html_utf8):
+        """
+        Extrai todos os links de PDF que começam com '../doc' e terminam com '.pdf'
+        do conteúdo HTML e os converte para URLs completas.
+
+        Args:
+            html_utf8 (bytes ou str): Conteúdo HTML para extrair os links.
+
+        Returns:
+            list: Lista de strings contendo as URLs completas dos PDFs encontrados.
+        """
+        # Converte para string se estiver em bytes
+        if isinstance(html_utf8, bytes):
+            html_utf8 = html_utf8.decode('utf-8')
+        pattern = r'href=["\'](\.\.\/doc[^"\']*\.pdf)["\']'
+        relative_pdf_links = re.findall(pattern, html_utf8)
+        base_url = "http://www.ipeadata.gov.br"
+        absolute_pdf_links = []
+
+        for link in relative_pdf_links:
+            absolute_link = link.replace('../', f'{base_url}/')
+            absolute_pdf_links.append(absolute_link)
+        if len(absolute_pdf_links):
+            result = self.extract_pdfs_in_parallel(list(set(absolute_pdf_links)))
+            for html_name in result:
+                name = html_name.split('/doc/')[-1].replace(' ', '_').replace('.pdf', '.html')
+                if result[html_name]:
+                    content = result[html_name]
+                    if isinstance(content, str):
+                        content = content.encode('utf-8')
+                    self.__upload_to_s3(name, f"pdf_to_html/date={datetime.now().date()}/", content)
+        else:
+            print('nao possui links para pdfs')
+
+    @staticmethod
+    def extract_pdfs_in_parallel(pdf_urls, max_workers=5):
+        """
+        Realiza a extração de múltiplos PDFs em paralelo.
+
+        Args:
+            pdf_urls (list): Lista de URLs de PDFs para processar.
+            max_workers (int, opcional): Número máximo de workers para processamento paralelo.
+
+        Returns:
+            dict: Dicionário com as URLs como chaves e o conteúdo HTML como valores.
+        """
+        results = {}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_url = {executor.submit(convert_pdf, url): url for url in pdf_urls}
+            for future in concurrent.futures.as_completed(future_to_url):
+                url = future_to_url[future]
+                try:
+                    html_content = future.result()
+                    results[url] = html_content
+                    print(f"Extraído com sucesso: {url}")
+                except Exception as e:
+                    print(f"Erro ao processar {url}: {str(e)}")
+                    results[url] = None
+        return results

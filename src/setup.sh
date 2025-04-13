@@ -34,6 +34,8 @@ apt-get install -y \
     libxdamage1 \
     libxfixes3 \
     libxrandr2 \
+    tesseract-ocr \
+    poppler-utils \
     xdg-utils
 
 echo "Baixando e adicionando chave de repositório do Google Chrome..."
