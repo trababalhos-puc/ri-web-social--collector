@@ -90,7 +90,7 @@ install-p:
 	@echo ">>> [Make] Instalando dependências via Poetry..."
 	poetry install --with dev
 
-lint:
+lint: install-p
 	@echo ">>> [Make] Executando verificação de código com Ruff..."
 	poetry run ruff check .
 	poetry run ruff check --fix .
