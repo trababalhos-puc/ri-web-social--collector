@@ -10,3 +10,5 @@ vscode
 poetry.lock
 ler.py
 *.pem
+*html_files_map.json
+*/ipea

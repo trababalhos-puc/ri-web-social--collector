@@ -48,7 +48,7 @@ apply:
 
 destroy:
 	@echo "Destruindo infraestrutura..."
-	terraform destroy $(TF_COMMON_VARS) -auto-approve
+	terraform destroy $(TF_COMMON_VARS)
 
 clean:
 	@echo "Limpando arquivos temporários..."

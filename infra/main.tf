@@ -1,5 +1,3 @@
-# Atualização do módulo VPC no arquivo principal (main.tf)
-
 module "vpc" {
   source            = "./modules/vpc"
   TagEnv            = var.TagEnv
@@ -69,5 +67,5 @@ module "ecs" {
   health_check_path     = "/"
   enable_https          = false
   tags                  = local.common_tags
-#   schedule_expression   = "rate(1 day)"
+  schedule_expression   = "rate(1 day)"
 }

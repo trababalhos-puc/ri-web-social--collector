@@ -22,6 +22,9 @@ webdriver-manager = "^4.0.2"
 boto3 = "^1.37.21"
 awswrangler = "^3.11.0"
 pdfminer3 = "^2018.12.3.0"
+html-to-json = "^2.0.0"
+nltk = "^3.9.1"
+matplotlib = "^3.10.3"
 
 
 [tool.poetry.group.dev.dependencies]

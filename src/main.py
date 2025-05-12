@@ -1,6 +1,8 @@
 import os
-
+import multiprocessing
 from service.extract import IPEAExtractor
+from service.index import Index
+from service.transform import HTMLFileMapper
 
 BUCKET = os.getenv(
     "BUCKET_NAME",

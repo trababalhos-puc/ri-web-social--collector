@@ -1,0 +1,10 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY requirements-index.txt .
+RUN pip install --no-cache-dir -r requirements-index.txt
+
+RUN python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('rslp'); nltk.download('punkt_tab')"
+
+CMD ["python", "index.py"]

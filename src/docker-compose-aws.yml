@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - BUCKET_NAME=${BUCKET_NAME:-testes-ari}
+      - BUCKET_NAME=${BUCKET_NAME:-prod-ri-web-social--collector--trab}
       - AWS_PROFILE=${AWS_PROFILE:-default}
     volumes:
       - ~/.aws:/root/.aws:ro

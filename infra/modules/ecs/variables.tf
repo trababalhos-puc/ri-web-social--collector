@@ -99,7 +99,7 @@ variable "iam_policy_arns" {
 variable "schedule_expression" {
   description = "Expressão cron para agendamento de execução da tarefa (ex: cron(0 12 * * ? *) para executar às 12:00 UTC diariamente)"
   type        = string
-  default = null
+  default = ""
 }
 
 variable "route_table_ids" {

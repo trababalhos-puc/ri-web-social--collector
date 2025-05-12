@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  ipea-indexacao:
+    build:
+      context: .
+      dockerfile: Dockerfile-index
+    volumes:
+      - .:/app
+    command: python index.py

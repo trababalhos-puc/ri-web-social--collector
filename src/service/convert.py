@@ -138,10 +138,10 @@ def process_pdf_urls(urls):
         try:
             html = pdf_to_html_string(url)
             results.append((url, html))
-            print(f"✅ Convertido: {url}")
+            print(f"Convertido: {url}")
         except Exception as e:
             results.append((url, None))
-            print(f"❌ Falha: {url} - {e}")
+            print(f"Falha: {url} - {e}")
     return results
 
 
