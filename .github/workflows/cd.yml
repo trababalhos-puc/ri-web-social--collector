@@ -98,12 +98,12 @@ jobs:
   check-pr:
     uses: ./.github/workflows/check-pr.yml
 
-  terraform-deploy:
-    if: github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
-    needs: [determine-environment, test, security, check-pr, check-infra-changes]
-    uses: ./.github/workflows/terraform-core.yml
-    with:
-      environment: ${{ needs.determine-environment.outputs.environment }}
-    secrets:
-      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
+#  terraform-deploy:
+#    if: github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
+#    needs: [determine-environment, test, security, check-pr, check-infra-changes]
+#    uses: ./.github/workflows/terraform-core.yml
+#    with:
+#      environment: ${{ needs.determine-environment.outputs.environment }}
+#    secrets:
+#      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+#      AWS_REGION: ${{ secrets.AWS_REGION }}

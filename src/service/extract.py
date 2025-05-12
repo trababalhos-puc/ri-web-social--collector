@@ -1,10 +1,9 @@
+import concurrent.futures
 import os
 import re
 import time
 import unicodedata
 from datetime import datetime
-import concurrent.futures
-
 
 import boto3
 import chardet
@@ -13,8 +12,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from service.convert import convert_pdf
 from config import drive
+from service.convert import convert_pdf
 
 
 class IPEAExtractor:

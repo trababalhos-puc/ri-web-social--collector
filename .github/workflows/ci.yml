@@ -82,15 +82,15 @@ jobs:
 #    secrets:
 #      INFRACOST_TOKEN: ${{ secrets.INFRACOST_TOKEN }}
 
-  terraform-dev:
-    if: github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
-    uses: ./.github/workflows/terraform-core.yml
-    needs: [test, security, check-pr, check-infra-changes]
-    with:
-      environment: "dev"
-    secrets:
-      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
+#  terraform-dev:
+#    if: github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'
+#    uses: ./.github/workflows/terraform-core.yml
+#    needs: [test, security, check-pr, check-infra-changes]
+#    with:
+#      environment: "dev"
+#    secrets:
+#      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+#      AWS_REGION: ${{ secrets.AWS_REGION }}
 
   pr-comment:
     if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' && needs.check-infra-changes.outputs.infra_changed == 'true'

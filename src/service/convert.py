@@ -1,7 +1,8 @@
 import os
+import shutil
 import subprocess
 import tempfile
-import shutil
+
 import requests
 
 
@@ -42,7 +43,7 @@ def pdf_to_html_string(pdf_source):
         temp_html_file = temp_html_base + ".html"
 
         if not os.path.exists(temp_html_file):
-            raise FileNotFoundError('pdftohtml falhou ao gerar o arquivo HTML')
+            raise FileNotFoundError("pdftohtml falhou ao gerar o arquivo HTML")
         with open(temp_html_file, "r", encoding="utf-8", errors="replace") as f:
             html_content = f.read()
         enhanced_html = f"""<!DOCTYPE html>

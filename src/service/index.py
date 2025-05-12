@@ -1,25 +1,25 @@
-from typing import Dict, Any
 import json
-import nltk
-import re
-import unicodedata
-import time
-import pickle
 import math
-from collections import defaultdict, Counter
+import pickle
+import re
+import time
+import unicodedata
+from collections import Counter, defaultdict
+
+import matplotlib.pyplot as plt
+import nltk
 from nltk import tokenize
 from nltk.corpus import stopwords
 from nltk.stem import RSLPStemmer
-import matplotlib.pyplot as plt
 
+nltk.download("punkt", quiet=True)
+nltk.download("stopwords", quiet=True)
+nltk.download("rslp", quiet=True)
+nltk.download("punkt_tab", quiet=True)
 
-nltk.download('punkt', quiet=True)
-nltk.download('stopwords', quiet=True)
-nltk.download('rslp', quiet=True)
-nltk.download('punkt_tab', quiet=True)
 
 class TextProcessor:
-    def __init__(self, language='portuguese'):
+    def __init__(self, language="portuguese"):
         self.language = language
         self.stopwords = set(stopwords.words(language))
         self.stemmer = RSLPStemmer()
@@ -28,10 +28,14 @@ class TextProcessor:
     def normalize_text(text):
         """Remove acentos, pontuação e converte para minúsculas"""
         text = text.lower()
-        text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
-        text = re.sub(r'[^\w\s]', ' ', text)
-        text = re.sub(r'\d+', ' ', text)
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = (
+            unicodedata.normalize("NFKD", text)
+            .encode("ASCII", "ignore")
+            .decode("ASCII")
+        )
+        text = re.sub(r"[^\w\s]", " ", text)
+        text = re.sub(r"\d+", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
 
         return text
 
@@ -50,16 +54,25 @@ class TextProcessor:
     @staticmethod
     def create_ngrams(tokens, n=2):
         """Cria n-gramas a partir dos tokens"""
-        return [' '.join(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
+        return [" ".join(tokens[i : i + n]) for i in range(len(tokens) - n + 1)]
 
     def create_shingles(self, tokens, max_n=3):
         """Cria shingles (1 até max_n gramas)"""
         shingles = []
-        for n in range(1, max_n+1):
+        for n in range(1, max_n + 1):
             shingles.extend(self.create_ngrams(tokens, n))
         return shingles
 
-    def process_text(self, text, remove_stop=True, apply_stem=True, create_grams=False, n_gram=2, create_shing=False, max_n=3):
+    def process_text(
+        self,
+        text,
+        remove_stop=True,
+        apply_stem=True,
+        create_grams=False,
+        n_gram=2,
+        create_shing=False,
+        max_n=3,
+    ):
         """Processa o texto aplicando todas as transformações"""
         normalized_text = self.normalize_text(text)
         tokens = self.tokenize(normalized_text)
@@ -70,15 +83,16 @@ class TextProcessor:
         if apply_stem:
             tokens = self.apply_stemming(tokens)
 
-        result = {'tokens': tokens}
+        result = {"tokens": tokens}
 
         if create_grams:
-            result['ngrams'] = self.create_ngrams(tokens, n_gram)
+            result["ngrams"] = self.create_ngrams(tokens, n_gram)
 
         if create_shing:
-            result['shingles'] = self.create_shingles(tokens, max_n)
+            result["shingles"] = self.create_shingles(tokens, max_n)
 
         return result
+
 
 class InvertedIndex:
     def __init__(self):
@@ -153,35 +167,40 @@ class InvertedIndex:
 
     def save_index(self, filepath):
         """Salva o índice no disco"""
-        with open(filepath, 'wb') as f:
-            pickle.dump({
-                'index': dict(self.index),
-                'documents': self.documents,
-                'tf': dict(self.tf),
-                'df': self.df,
-                'vocabulary': self.vocabulary,
-                'total_docs': self.total_docs
-            }, f)
+        with open(filepath, "wb") as f:
+            pickle.dump(
+                {
+                    "index": dict(self.index),
+                    "documents": self.documents,
+                    "tf": dict(self.tf),
+                    "df": self.df,
+                    "vocabulary": self.vocabulary,
+                    "total_docs": self.total_docs,
+                },
+                f,
+            )
 
     def load_index(self, filepath):
         """Carrega o índice do disco"""
-        with open(filepath, 'rb') as f:
+        with open(filepath, "rb") as f:
             data = pickle.load(f)
-            self.index = defaultdict(list, data['index'])
-            self.documents = data['documents']
-            self.tf = defaultdict(Counter, data['tf'])
-            self.df = data['df']
-            self.vocabulary = data['vocabulary']
-            self.total_docs = data['total_docs']
+            self.index = defaultdict(list, data["index"])
+            self.documents = data["documents"]
+            self.tf = defaultdict(Counter, data["tf"])
+            self.df = data["df"]
+            self.vocabulary = data["vocabulary"]
+            self.total_docs = data["total_docs"]
 
     def get_stats(self):
         """Retorna estatísticas sobre o índice"""
         return {
-            'num_documents': self.total_docs,
-            'vocabulary_size': len(self.vocabulary),
-            'mean_terms_per_doc': sum(self.documents.values()) / max(1, self.total_docs),
-            'postings_size': sum(len(postings) for postings in self.index.values())
+            "num_documents": self.total_docs,
+            "vocabulary_size": len(self.vocabulary),
+            "mean_terms_per_doc": sum(self.documents.values())
+            / max(1, self.total_docs),
+            "postings_size": sum(len(postings) for postings in self.index.values()),
         }
+
 
 class IndexAnalyzer:
     def __init__(self, processor, documents):
@@ -196,12 +215,12 @@ class IndexAnalyzer:
         """Cria um índice com os parâmetros especificados"""
         t0 = time.time()
         default_params = {
-            'remove_stop': True,
-            'apply_stem': True,
-            'create_grams': False,
-            'n_gram': 2,
-            'create_shing': False,
-            'max_n': 3
+            "remove_stop": True,
+            "apply_stem": True,
+            "create_grams": False,
+            "n_gram": 2,
+            "create_shing": False,
+            "max_n": 3,
         }
 
         if params:
@@ -209,26 +228,25 @@ class IndexAnalyzer:
         else:
             params = default_params
 
-
         index = InvertedIndex()
 
         for doc_id, doc_text in self.documents.items():
             result = self.processor.process_text(
                 doc_text,
-                remove_stop=params['remove_stop'],
-                apply_stem=params['apply_stem'],
-                create_grams=params['create_grams'],
-                n_gram=params['n_gram'],
-                create_shing=params['create_shing'],
-                max_n=params['max_n']
+                remove_stop=params["remove_stop"],
+                apply_stem=params["apply_stem"],
+                create_grams=params["create_grams"],
+                n_gram=params["n_gram"],
+                create_shing=params["create_shing"],
+                max_n=params["max_n"],
             )
 
-            if params['create_grams'] and not params['create_shing']:
-                index.add_document(doc_id, result['ngrams'])
-            elif params['create_shing']:
-                index.add_document(doc_id, result['shingles'])
+            if params["create_grams"] and not params["create_shing"]:
+                index.add_document(doc_id, result["ngrams"])
+            elif params["create_shing"]:
+                index.add_document(doc_id, result["shingles"])
             else:
-                index.add_document(doc_id, result['tokens'])
+                index.add_document(doc_id, result["tokens"])
 
         self.indices[name] = index
         self.stats[name] = index.get_stats()
@@ -247,32 +265,35 @@ class IndexAnalyzer:
         plt.figure(figsize=(12, 8))
         plt.subplot(2, 2, 1)
         plt.bar(self.times.keys(), self.times.values())
-        plt.title('Tempo de Indexação')
-        plt.ylabel('Tempo (s)')
+        plt.title("Tempo de Indexação")
+        plt.ylabel("Tempo (s)")
         plt.xticks(rotation=45)
 
         plt.subplot(2, 2, 2)
-        vocab_sizes = [stats['vocabulary_size'] for stats in self.stats.values()]
+        vocab_sizes = [stats["vocabulary_size"] for stats in self.stats.values()]
         plt.bar(self.stats.keys(), vocab_sizes)
-        plt.title('Tamanho do Vocabulário')
-        plt.ylabel('Número de Termos')
+        plt.title("Tamanho do Vocabulário")
+        plt.ylabel("Número de Termos")
         plt.xticks(rotation=45)
 
         plt.subplot(2, 2, 3)
-        mean_sizes = [stats['mean_terms_per_doc'] for stats in self.stats.values()]
+        mean_sizes = [stats["mean_terms_per_doc"] for stats in self.stats.values()]
         plt.bar(self.stats.keys(), mean_sizes)
-        plt.title('Média de Termos por Documento')
-        plt.ylabel('Número de Termos')
+        plt.title("Média de Termos por Documento")
+        plt.ylabel("Número de Termos")
         plt.xticks(rotation=45)
 
         plt.subplot(2, 2, 4)
-        plt.bar(self.memory_usage.keys(), [size/1024/1024 for size in self.memory_usage.values()])
-        plt.title('Tamanho do Índice')
-        plt.ylabel('Tamanho (MB)')
+        plt.bar(
+            self.memory_usage.keys(),
+            [size / 1024 / 1024 for size in self.memory_usage.values()],
+        )
+        plt.title("Tamanho do Índice")
+        plt.ylabel("Tamanho (MB)")
         plt.xticks(rotation=45)
 
         plt.tight_layout()
-        plt.savefig('index_comparison.png')
+        plt.savefig("index_comparison.png")
         plt.close()
 
         print("\nEstatísticas dos Índices:")
@@ -296,7 +317,7 @@ class IndexAnalyzer:
             processed_query = self.processor.process_text(query)
 
             start_time = time.time()
-            results = index.rank_search(processed_query['tokens'])
+            results = index.rank_search(processed_query["tokens"])
             end_time = time.time()
 
             print(f"\n{name}:")
@@ -328,17 +349,17 @@ class Index:
             return self.documents
 
         try:
-            with open(self.json_file_path, 'r', encoding='utf-8') as f:
+            with open(self.json_file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             documents = {}
             doc_id = 1
 
-            for date_key, date_content in data.get('ipea', {}).items():
+            for date_key, date_content in data.get("ipea", {}).items():
                 for subdir_name, subdir_content in date_content.items():
                     for file_name, file_info in subdir_content.items():
-                        if isinstance(file_info, dict) and 'content' in file_info:
+                        if isinstance(file_info, dict) and "content" in file_info:
                             doc_path = f"{date_key}/{subdir_name}/{file_name}"
-                            content = file_info.get('content', '')
+                            content = file_info.get("content", "")
                             documents[doc_path] = content
                             doc_id += 1
                         elif isinstance(file_info, str):
@@ -372,29 +393,25 @@ class Index:
         analyzer = IndexAnalyzer(processor, self.documents)
         analyzer.create_index("básico")
 
-        analyzer.create_index("sem_stopwords", {
-            'remove_stop': True,
-            'apply_stem': False
-        })
+        analyzer.create_index(
+            "sem_stopwords", {"remove_stop": True, "apply_stem": False}
+        )
 
-        analyzer.create_index("com_stemming", {
-            'remove_stop': True,
-            'apply_stem': True
-        })
+        analyzer.create_index("com_stemming", {"remove_stop": True, "apply_stem": True})
 
-        analyzer.create_index("bigramas", {
-            'remove_stop': True,
-            'apply_stem': True,
-            'create_grams': True,
-            'n_gram': 2
-        })
+        analyzer.create_index(
+            "bigramas",
+            {
+                "remove_stop": True,
+                "apply_stem": True,
+                "create_grams": True,
+                "n_gram": 2,
+            },
+        )
 
-        analyzer.create_index("shingles", {
-            'remove_stop': True,
-            'apply_stem': True,
-            'create_shing': True,
-            'max_n': 3
-        })
+        analyzer.create_index(
+            "shingles",
+            {"remove_stop": True, "apply_stem": True, "create_shing": True, "max_n": 3},
+        )
 
         return analyzer
-
