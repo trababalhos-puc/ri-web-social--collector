@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Trivy Security Scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.31.0
         with:
           scan-type: 'fs'
           vulnerability-threshold: 'MEDIUM'
