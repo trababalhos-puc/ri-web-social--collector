@@ -114,11 +114,11 @@ class IPEAExtractor:
                     self.extract_pdf_links(html_utf8)
                     self.driver.back()
                     time.sleep(1)
-                    iframe = WebDriverWait(self.driver, 10).until(
+                    iframe = WebDriverWait(self.driver, 30).until(
                         EC.presence_of_element_located((By.TAG_NAME, "iframe"))
                     )
                     self.driver.switch_to.frame(iframe)
-                    table = WebDriverWait(self.driver, 15).until(
+                    table = WebDriverWait(self.driver, 30).until(
                         EC.presence_of_element_located((By.ID, "grid_DXMainTable"))
                     )
                     dados.append(data)

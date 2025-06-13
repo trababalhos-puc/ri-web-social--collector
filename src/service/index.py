@@ -331,6 +331,19 @@ class IndexAnalyzer:
             else:
                 print("  Nenhum documento encontrado.")
 
+    def search_top_5(self, query, top_n=5):
+        """Retorna lista com (nome_do_indice, resultados_ranked) para a query."""
+        if not self.indices:
+            print("Nenhum índice foi criado ainda.")
+            return []
+
+        results = []
+        processed = self.processor.process_text(query)["tokens"]
+        for name, index in self.indices.items():
+            ranked = index.rank_search(processed)[:top_n]
+            results.append((name, ranked))
+        return results
+
 
 class Index:
     def __init__(self, json_file_path=None, documents=None):
@@ -415,3 +428,4 @@ class Index:
         )
 
         return analyzer
+
